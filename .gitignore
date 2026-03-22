@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# SQLite database (created at runtime inside Docker volume)
+*.db
+
+# Docker
+.dockerignore
+
+# Node (used only to vendor Chart.js locally)
+node_modules/
+package*.json
+
+# OS
+.DS_Store
+Thumbs.db
