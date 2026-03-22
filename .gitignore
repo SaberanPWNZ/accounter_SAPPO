@@ -12,6 +12,10 @@ venv/
 # Docker
 .dockerignore
 
+# Node (used only to vendor Chart.js locally)
+node_modules/
+package*.json
+
 # OS
 .DS_Store
 Thumbs.db

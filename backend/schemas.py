@@ -7,6 +7,7 @@ from pydantic import BaseModel, field_validator
 class TransactionCreate(BaseModel):
     amount: float
     description: str
+    category: str = ""
 
     @field_validator("description")
     @classmethod
@@ -22,12 +23,18 @@ class TransactionCreate(BaseModel):
             raise ValueError("amount must not be zero")
         return v
 
+    @field_validator("category")
+    @classmethod
+    def category_strip(cls, v: str) -> str:
+        return v.strip()
+
 
 class TransactionOut(BaseModel):
     id: int
     account_id: int
     amount: float
     description: str
+    category: str
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -63,3 +70,29 @@ class AccountSummary(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------- Statistics ----------
+
+class DayStat(BaseModel):
+    date: str          # "YYYY-MM-DD"
+    income: float
+    expenses: float
+    net: float
+    count: int
+
+
+class MonthStat(BaseModel):
+    year: int
+    month: int
+    month_name: str
+    income: float
+    expenses: float
+    net: float
+    count: int
+
+
+class CategoryStat(BaseModel):
+    category: str
+    total: float
+    count: int

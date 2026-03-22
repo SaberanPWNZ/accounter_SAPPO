@@ -1,11 +1,15 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 import crud
 import models
 from database import Base, engine, get_db
-from schemas import AccountCreate, AccountOut, AccountSummary, TransactionCreate, TransactionOut
+from schemas import (
+    AccountCreate, AccountOut, AccountSummary,
+    CategoryStat, DayStat, MonthStat,
+    TransactionCreate, TransactionOut,
+)
 
 # Create all tables on startup
 Base.metadata.create_all(bind=engine)
@@ -63,6 +67,7 @@ def get_account(account_id: int, db: Session = Depends(get_db)):
                 account_id=t.account_id,
                 amount=t.amount,
                 description=t.description,
+                category=t.category,
                 created_at=t.created_at,
             )
             for t in sorted(account.transactions, key=lambda t: t.created_at, reverse=True)
@@ -102,3 +107,32 @@ def delete_transaction(
         raise HTTPException(status_code=404, detail="Account not found")
     if not crud.delete_transaction(db, transaction_id):
         raise HTTPException(status_code=404, detail="Transaction not found")
+
+
+# ── Statistics ───────────────────────────────────────────────────────────────
+
+@app.get("/api/stats/by-day", response_model=list[DayStat])
+def stats_by_day(
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    account_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_stats_by_day(db, year=year, month=month, account_id=account_id)
+
+
+@app.get("/api/stats/by-month", response_model=list[MonthStat])
+def stats_by_month(
+    year: int = Query(..., ge=2000, le=2100),
+    account_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_stats_by_month(db, year=year, account_id=account_id)
+
+
+@app.get("/api/stats/by-category", response_model=list[CategoryStat])
+def stats_by_category(
+    account_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_stats_by_category(db, account_id=account_id)

@@ -32,8 +32,25 @@ header {
   padding: 1.25rem 2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
+.header-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 header h1 { font-size: 1.6rem; }
 header .subtitle { font-size: .9rem; opacity: .85; margin-top: .15rem; }
+
+/* ── Nav tabs ────────────────────────────────────────────────────────────── */
+.main-nav { display: flex; gap: .5rem; }
+.nav-btn {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  border-radius: 6px;
+  padding: .4rem .9rem;
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.25); }
+.nav-btn.active { background: #fff; color: var(--primary); }
 
 /* ── Main layout ─────────────────────────────────────────────────────────── */
 main {
@@ -232,3 +249,87 @@ main {
   z-index: 200;
 }
 #toast.show { opacity: 1; }
+
+/* ── Statistics page ─────────────────────────────────────────────────────── */
+.stats-page {
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Controls bar */
+.stats-controls { padding: .85rem 1.25rem; }
+.stats-controls-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.stats-controls-row label { display: flex; flex-direction: column; font-size: .8rem; font-weight: 600; color: var(--muted); gap: .25rem; }
+.stats-controls-row select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .35rem .65rem;
+  font-size: .875rem;
+  background: var(--surface);
+  outline: none;
+  min-width: 120px;
+}
+.stats-controls-row select:focus { border-color: var(--primary); }
+
+/* Summary cards */
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 800px) { .stats-summary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .stats-summary { grid-template-columns: 1fr; } }
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.summary-label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.summary-value { font-size: 1.5rem; font-weight: 700; }
+.income-card  .summary-value { color: var(--green); }
+.expense-card .summary-value { color: var(--red); }
+.net-card     .summary-value { color: var(--primary); }
+.tx-card      .summary-value { color: var(--text); }
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.chart-card h3 { font-size: .95rem; margin-bottom: .75rem; }
+.chart-card--full { grid-column: 1 / -1; }
+
+.period-label { color: var(--muted); font-weight: 400; font-size: .85rem; }
+
+.chart-wrap { position: relative; height: 240px; }
+.chart-empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 2rem 0; }
+
+/* Category layout */
+.category-layout { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
+.chart-wrap--doughnut { width: 240px; height: 240px; flex-shrink: 0; }
+
+/* Category table */
+.category-table { flex: 1; min-width: 220px; }
+.category-table table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.category-table th { text-align: left; padding: .4rem .6rem; color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.category-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--border); }
+.category-table tr:last-child td { border-bottom: none; }
+.cat-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: .4rem; }
