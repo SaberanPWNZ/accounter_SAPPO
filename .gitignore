@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# SQLite database (created at runtime inside Docker volume)
+*.db
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db

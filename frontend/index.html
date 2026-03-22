@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accounter SAPPO</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>💰 Accounter SAPPO</h1>
+    <p class="subtitle">Group money management made simple</p>
+  </header>
+
+  <main>
+    <!-- Left panel: account list + create -->
+    <section class="panel" id="accounts-panel">
+      <div class="panel-header">
+        <h2>Accounts</h2>
+        <button class="btn btn-primary" id="open-create-modal">+ New Account</button>
+      </div>
+
+      <ul class="account-list" id="account-list">
+        <li class="placeholder">Loading…</li>
+      </ul>
+    </section>
+
+    <!-- Right panel: account detail -->
+    <section class="panel" id="detail-panel">
+      <div id="detail-empty" class="empty-state">
+        <span>👈</span>
+        <p>Select an account to see transactions</p>
+      </div>
+
+      <div id="detail-content" style="display:none">
+        <div class="detail-header">
+          <div>
+            <h2 id="detail-name"></h2>
+            <span class="balance" id="detail-balance"></span>
+          </div>
+          <button class="btn btn-danger" id="delete-account-btn">Delete account</button>
+        </div>
+
+        <div class="tx-form card">
+          <h3>Add transaction</h3>
+          <div class="form-row">
+            <input type="number" id="tx-amount" placeholder="Amount (+ deposit / − expense)" step="0.01" />
+            <input type="text" id="tx-description" placeholder="Description" />
+            <button class="btn btn-primary" id="add-tx-btn">Add</button>
+          </div>
+          <p class="form-hint">Use a <strong>positive</strong> number to deposit, <strong>negative</strong> to record an expense.</p>
+        </div>
+
+        <h3 class="tx-heading">Transactions</h3>
+        <ul class="tx-list" id="tx-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create account modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2>New Account</h2>
+      <input type="text" id="new-account-name" placeholder="Account name (e.g. Trip to Paris)" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancel-modal">Cancel</button>
+        <button class="btn btn-primary" id="confirm-create">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
