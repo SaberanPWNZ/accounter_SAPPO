@@ -62,14 +62,7 @@ def get_account(account_id: int, db: Session = Depends(get_db)):
         balance=crud.compute_balance(account),
         created_at=account.created_at,
         transactions=[
-            TransactionOut(
-                id=t.id,
-                account_id=t.account_id,
-                amount=t.amount,
-                description=t.description,
-                category=t.category,
-                created_at=t.created_at,
-            )
+            TransactionOut.model_validate(t)
             for t in sorted(account.transactions, key=lambda t: t.created_at, reverse=True)
         ],
     )

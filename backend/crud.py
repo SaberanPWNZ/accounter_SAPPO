@@ -6,7 +6,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from models import Account, Transaction
+from models import Account, Transaction, Participant
 from schemas import AccountCreate, CategoryStat, DayStat, MonthStat, TransactionCreate
 
 
@@ -56,8 +56,17 @@ def create_transaction(
         amount=data.amount,
         description=data.description,
         category=data.category,
+        is_expense=data.is_expense,
+        is_paid=data.is_paid,
+        card_number=data.card_number,
     )
     db.add(tx)
+    db.flush()
+    
+    for participant_data in data.participants:
+        participant = Participant(name=participant_data.name)
+        tx.participants.append(participant)
+    
     db.commit()
     db.refresh(tx)
     return tx

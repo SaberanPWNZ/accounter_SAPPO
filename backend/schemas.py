@@ -4,10 +4,32 @@ from pydantic import BaseModel, field_validator
 
 # ---------- Transaction ----------
 
+class ParticipantCreate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be empty")
+        return v.strip()
+
+
+class ParticipantOut(BaseModel):
+    id: int
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
 class TransactionCreate(BaseModel):
     amount: float
     description: str
     category: str = ""
+    is_expense: bool = True
+    is_paid: bool = True
+    card_number: str | None = None
+    participants: list[ParticipantCreate] = []
 
     @field_validator("description")
     @classmethod
@@ -35,7 +57,11 @@ class TransactionOut(BaseModel):
     amount: float
     description: str
     category: str
+    is_expense: bool
+    is_paid: bool
+    card_number: str | None
     created_at: datetime
+    participants: list[ParticipantOut] = []
 
     model_config = {"from_attributes": True}
 
