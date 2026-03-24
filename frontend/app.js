@@ -7,6 +7,7 @@ let currentAccountId = null;
 let chartDaily   = null;
 let chartMonthly = null;
 let chartCat     = null;
+let allTransactions = [];
 
 // ── DOM refs ──────────────────────────────────────────────────────────────
 const accountList      = document.getElementById('account-list');
@@ -19,6 +20,7 @@ const txListExpenses   = document.getElementById('tx-list-expenses');
 const txListIncome     = document.getElementById('tx-list-income');
 const txAmount             = document.getElementById('tx-amount');
 const txDescription        = document.getElementById('tx-description');
+const txDate               = document.getElementById('tx-date');
 const txCategory           = document.getElementById('tx-category');
 const txCardNumber         = document.getElementById('tx-card-number');
 const txIsPaid             = document.getElementById('tx-is-paid');
@@ -375,11 +377,69 @@ document.getElementById('contrib-refresh').addEventListener('click', loadContrib
 document.getElementById('contrib-month').addEventListener('change', loadContributions);
 
 function renderTransactions(transactions) {
-  const expenses = transactions.filter(tx => tx.amount < 0);
-  const income = transactions.filter(tx => tx.amount >= 0);
+  allTransactions = transactions;
+  populateFilterCategorySelect(transactions);
+  applyFilters();
+}
+
+function populateFilterCategorySelect(transactions) {
+  const sel = document.getElementById('filter-expense-category');
+  const prev = sel.value;
+  const cats = new Set();
+  for (const tx of transactions) {
+    if (tx.category) cats.add(tx.category);
+  }
+  sel.innerHTML = '<option value="">All categories</option>';
+  for (const c of [...cats].sort()) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  }
+  sel.value = prev;
+}
+
+function applyFilters() {
+  const expSearch = (document.getElementById('filter-expense-search').value || '').toLowerCase();
+  const expCat    = document.getElementById('filter-expense-category').value;
+  const expPaid   = document.getElementById('filter-expense-paid').value;
+  const expFrom   = document.getElementById('filter-expense-from').value;
+  const expTo     = document.getElementById('filter-expense-to').value;
+  const incSearch = (document.getElementById('filter-income-search').value || '').toLowerCase();
+  const incFrom   = document.getElementById('filter-income-from').value;
+  const incTo     = document.getElementById('filter-income-to').value;
+
+  let expenses = allTransactions.filter(tx => tx.amount < 0);
+  let income   = allTransactions.filter(tx => tx.amount >= 0);
+
+  if (expSearch) expenses = expenses.filter(tx =>
+    tx.description.toLowerCase().includes(expSearch) ||
+    (tx.category || '').toLowerCase().includes(expSearch) ||
+    (tx.contributor_name || '').toLowerCase().includes(expSearch)
+  );
+  if (expCat) expenses = expenses.filter(tx => tx.category === expCat);
+  if (expPaid === 'paid') expenses = expenses.filter(tx => tx.is_paid);
+  if (expPaid === 'unpaid') expenses = expenses.filter(tx => !tx.is_paid);
+  if (expFrom) expenses = expenses.filter(tx => tx.created_at.slice(0, 10) >= expFrom);
+  if (expTo)   expenses = expenses.filter(tx => tx.created_at.slice(0, 10) <= expTo);
+
+  if (incSearch) income = income.filter(tx =>
+    tx.description.toLowerCase().includes(incSearch) ||
+    (tx.contributor_name || '').toLowerCase().includes(incSearch)
+  );
+  if (incFrom) income = income.filter(tx => tx.created_at.slice(0, 10) >= incFrom);
+  if (incTo)   income = income.filter(tx => tx.created_at.slice(0, 10) <= incTo);
+
   renderTxColumn(txListExpenses, expenses, 'No expenses yet.');
   renderTxColumn(txListIncome, income, 'No income yet.');
 }
+
+['filter-expense-search','filter-expense-category','filter-expense-paid','filter-expense-from','filter-expense-to',
+ 'filter-income-search','filter-income-from','filter-income-to'
+].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
 
 function renderTxColumn(list, transactions, emptyMsg) {
   list.innerHTML = '';
@@ -431,6 +491,7 @@ addTxBtn.addEventListener('click', async () => {
     is_paid: isExpenseMode ? txIsPaid.checked : true,
     card_number: isExpenseMode ? (txCardNumber.value.trim() || null) : null,
     contributor_name: !isExpenseMode ? (txContributorSelect.value || null) : null,
+    created_at: txDate.value ? new Date(txDate.value).toISOString() : null,
     participants: participants.map(name => ({ name })),
   };
 
@@ -443,6 +504,7 @@ addTxBtn.addEventListener('click', async () => {
     txDescription.value = '';
     txCategory.value = '';
     txCardNumber.value = '';
+    txDate.value = '';
     txIsPaid.checked = true;
     txContributorSelect.value = '';
     participants = [];

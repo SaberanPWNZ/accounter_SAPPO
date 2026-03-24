@@ -30,6 +30,7 @@ class TransactionCreate(BaseModel):
     is_paid: bool = True
     card_number: str | None = None
     contributor_name: str | None = None
+    created_at: datetime | None = None
     participants: list[ParticipantCreate] = []
 
     @field_validator("description")

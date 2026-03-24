@@ -132,6 +132,8 @@ def create_transaction(
         card_number=data.card_number,
         contributor_name=data.contributor_name,
     )
+    if data.created_at:
+        tx.created_at = data.created_at
     db.add(tx)
     db.flush()
     
@@ -156,7 +158,10 @@ def delete_transaction(db: Session, transaction_id: int) -> bool:
 # ---------- Balance helper ----------
 
 def compute_balance(account: Account) -> float:
-    return round(sum(t.amount for t in account.transactions), 2)
+    return round(
+        sum(t.amount for t in account.transactions if not (t.is_expense and not t.is_paid)),
+        2,
+    )
 
 
 # ---------- Statistics helpers ----------
