@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from models import Account, Transaction, Participant, Member, Category
 from schemas import (
     AccountCreate, CategoryCreate, CategoryStat, ContributorMonthStat,
-    DayStat, MemberCreate, MonthContributions, MonthStat, TransactionCreate,
+    DayStat, MemberCreate, MemberUpdate, MonthContributions, MonthStat,
+    TransactionCreate, TransactionUpdate,
 )
 
 
@@ -68,6 +69,17 @@ def delete_member(db: Session, member_id: int) -> bool:
     db.delete(member)
     db.commit()
     return True
+
+
+def update_member(db: Session, member_id: int, data: MemberUpdate) -> Member | None:
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        return None
+    member.name = data.name
+    member.card_number = data.card_number
+    db.commit()
+    db.refresh(member)
+    return member
 
 
 # ---------- Category ----------
@@ -153,6 +165,26 @@ def delete_transaction(db: Session, transaction_id: int) -> bool:
     db.delete(tx)
     db.commit()
     return True
+
+
+def update_transaction(
+    db: Session, transaction_id: int, data: TransactionUpdate
+) -> Transaction | None:
+    tx = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    if not tx:
+        return None
+    tx.amount = data.amount
+    tx.description = data.description
+    tx.category = data.category
+    tx.is_expense = data.is_expense
+    tx.is_paid = data.is_paid
+    tx.card_number = data.card_number
+    tx.contributor_name = data.contributor_name
+    if data.created_at:
+        tx.created_at = data.created_at
+    db.commit()
+    db.refresh(tx)
+    return tx
 
 
 # ---------- Balance helper ----------

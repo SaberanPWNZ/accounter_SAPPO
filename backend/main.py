@@ -8,9 +8,9 @@ from database import Base, engine, get_db
 from schemas import (
     AccountCreate, AccountOut, AccountSummary,
     CategoryCreate, CategoryOut, CategoryStat,
-    DayStat, MemberCreate, MemberOut,
+    DayStat, MemberCreate, MemberOut, MemberUpdate,
     MonthContributions, MonthStat,
-    TransactionCreate, TransactionOut,
+    TransactionCreate, TransactionOut, TransactionUpdate,
 )
 
 # Create all tables on startup
@@ -105,6 +105,21 @@ def delete_member(account_id: int, member_id: int, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Member not found")
 
 
+@app.put(
+    "/api/accounts/{account_id}/members/{member_id}",
+    response_model=MemberOut,
+)
+def update_member(
+    account_id: int, member_id: int, data: MemberUpdate, db: Session = Depends(get_db)
+):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    member = crud.update_member(db, member_id, data)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
+
 # ── Categories ───────────────────────────────────────────────────────────────
 
 @app.get("/api/accounts/{account_id}/categories", response_model=list[CategoryOut])
@@ -179,6 +194,21 @@ def delete_transaction(
         raise HTTPException(status_code=404, detail="Account not found")
     if not crud.delete_transaction(db, transaction_id):
         raise HTTPException(status_code=404, detail="Transaction not found")
+
+
+@app.put(
+    "/api/accounts/{account_id}/transactions/{transaction_id}",
+    response_model=TransactionOut,
+)
+def update_transaction(
+    account_id: int, transaction_id: int, data: TransactionUpdate, db: Session = Depends(get_db)
+):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    tx = crud.update_transaction(db, transaction_id, data)
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return tx
 
 
 # ── Statistics ───────────────────────────────────────────────────────────────

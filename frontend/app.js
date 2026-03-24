@@ -194,6 +194,7 @@ function renderMembersList() {
     list.innerHTML = '<li class="placeholder">No members yet.</li>';
     return;
   }
+  const accountId = document.getElementById('members-account-select').value || currentAccountId;
   for (const m of accountMembers) {
     const li = document.createElement('li');
     li.className = 'member-item';
@@ -202,11 +203,64 @@ function renderMembersList() {
         <span class="member-name">${escHtml(m.name)}</span>
         ${m.card_number ? `<span class="member-card">💳 ${escHtml(m.card_number)}</span>` : ''}
       </div>
-      <button class="btn-icon" title="Delete">🗑</button>
+      <div class="member-actions">
+        <button class="btn-icon" title="Edit">✏️</button>
+        <button class="btn-icon" title="Delete">🗑</button>
+      </div>
     `;
-    li.querySelector('.btn-icon').addEventListener('click', () => deleteMember(m.id));
+    const editBtn = li.querySelectorAll('.btn-icon')[0];
+    const deleteBtn = li.querySelectorAll('.btn-icon')[1];
+    editBtn.addEventListener('click', () => startEditMember(li, m, accountId));
+    deleteBtn.addEventListener('click', () => deleteMember(m.id));
     list.appendChild(li);
   }
+}
+
+function startEditMember(li, member, accountId) {
+  const infoDiv = li.querySelector('.member-info');
+  const actionsDiv = li.querySelector('.member-actions');
+
+  infoDiv.innerHTML = `
+    <input type="text" class="edit-member-input" value="${escHtml(member.name)}" placeholder="Name" />
+    <input type="text" class="edit-member-input" value="${member.card_number ? escHtml(member.card_number) : ''}" placeholder="Card number" style="margin-top:.25rem" />
+  `;
+  const nameInput = infoDiv.querySelectorAll('input')[0];
+  const cardInput = infoDiv.querySelectorAll('input')[1];
+  nameInput.focus();
+
+  actionsDiv.innerHTML = `
+    <button class="btn btn-primary btn-sm" title="Save">✓</button>
+    <button class="btn btn-secondary btn-sm" title="Cancel">✕</button>
+  `;
+  const saveBtn = actionsDiv.querySelectorAll('button')[0];
+  const cancelBtn = actionsDiv.querySelectorAll('button')[1];
+
+  const save = async () => {
+    const newName = nameInput.value.trim();
+    if (!newName) { showToast('Name cannot be empty', true); return; }
+    try {
+      await apiFetch(`/accounts/${accountId}/members/${member.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: newName, card_number: cardInput.value.trim() || null }),
+      });
+      showToast('Member updated');
+      await loadMembersForPage(accountId);
+      if (accountId == currentAccountId) {
+        accountMembers = await apiFetch(`/accounts/${currentAccountId}/members`);
+        populateMemberSelects();
+      }
+    } catch (e) {
+      showToast('Error: ' + e.message, true);
+    }
+  };
+
+  saveBtn.addEventListener('click', save);
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  cardInput.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  cancelBtn.addEventListener('click', () => {
+    const aid = document.getElementById('members-account-select').value || currentAccountId;
+    loadMembersForPage(aid);
+  });
 }
 
 function populateMemberSelects() {
@@ -464,12 +518,130 @@ function renderTxColumn(list, transactions, emptyMsg) {
       </div>
       <div class="tx-right">
         <span class="tx-amount ${amtClass}">${fmtMoney(tx.amount)}</span>
-        <button class="btn-icon" title="Delete" data-txid="${tx.id}">🗑</button>
+        <button class="btn-icon btn-edit-tx" title="Edit">✏️</button>
+        <button class="btn-icon btn-delete-tx" title="Delete" data-txid="${tx.id}">🗑</button>
       </div>
     `;
-    li.querySelector('.btn-icon').addEventListener('click', () => deleteTransaction(tx.id));
+    li.querySelector('.btn-edit-tx').addEventListener('click', () => startEditTransaction(li, tx));
+    li.querySelector('.btn-delete-tx').addEventListener('click', () => deleteTransaction(tx.id));
     list.appendChild(li);
   }
+}
+
+async function startEditTransaction(li, tx) {
+  let cats = [];
+  try {
+    cats = await apiFetch(`/accounts/${currentAccountId}/categories`);
+  } catch (_) {}
+
+  const isExp = tx.is_expense;
+  const dateVal = tx.created_at ? tx.created_at.slice(0, 10) : '';
+  const catOptions = cats.map(c =>
+    `<option value="${escHtml(c.name)}" ${c.name === tx.category ? 'selected' : ''}>${escHtml(c.name)}</option>`
+  ).join('');
+
+  li.className = 'tx-item';
+  li.style.flexDirection = 'column';
+  li.style.alignItems = 'stretch';
+  li.innerHTML = `
+    <div class="tx-edit-form">
+      <div class="form-row">
+        <input type="number" value="${Math.abs(tx.amount)}" step="0.01" min="0.01" placeholder="Amount" />
+        <input type="text" value="${escHtml(tx.description)}" placeholder="Description" />
+        <input type="date" value="${dateVal}" />
+      </div>
+      ${isExp ? `
+      <div class="form-row">
+        <select>
+          <option value="">Category</option>
+          ${catOptions}
+        </select>
+        <input type="text" value="${tx.card_number ? escHtml(tx.card_number) : ''}" placeholder="Card number" />
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" ${tx.is_paid ? 'checked' : ''} />
+        <span>Paid</span>
+      </label>
+      ` : `
+      <div class="form-row">
+        <input type="text" value="${tx.contributor_name ? escHtml(tx.contributor_name) : ''}" placeholder="Contributor" />
+      </div>
+      `}
+      <div class="tx-edit-actions">
+        <button class="btn btn-primary btn-sm">✓ Save</button>
+        <button class="btn btn-secondary btn-sm">✕ Cancel</button>
+      </div>
+    </div>
+  `;
+
+  const inputs = li.querySelectorAll('.form-row input, .form-row select');
+  const amountInput = inputs[0];
+  const descInput = inputs[1];
+  const dateInput = inputs[2];
+
+  let categoryVal = tx.category || '';
+  let cardVal = tx.card_number || '';
+  let isPaidVal = tx.is_paid;
+  let contributorVal = tx.contributor_name || '';
+
+  if (isExp) {
+    const catSelect = li.querySelector('.form-row select');
+    const cardInput = inputs[3];
+    const paidCheckbox = li.querySelector('.checkbox-label input[type="checkbox"]');
+    categoryVal = catSelect.value;
+    catSelect.addEventListener('change', () => { categoryVal = catSelect.value; });
+    cardInput.addEventListener('input', () => { cardVal = cardInput.value; });
+    paidCheckbox.addEventListener('change', () => { isPaidVal = paidCheckbox.checked; });
+  } else {
+    const contribInput = inputs[3];
+    contribInput.addEventListener('input', () => { contributorVal = contribInput.value; });
+  }
+
+  const saveBtn = li.querySelector('.tx-edit-actions .btn-primary');
+  const cancelBtn = li.querySelector('.tx-edit-actions .btn-secondary');
+
+  const save = async () => {
+    let amount = parseFloat(amountInput.value);
+    if (isNaN(amount) || amount === 0) { showToast('Enter a valid amount', true); return; }
+    if (isExp) amount = -Math.abs(amount);
+    else amount = Math.abs(amount);
+
+    if (isExp) {
+      categoryVal = li.querySelector('.form-row select').value;
+      cardVal = li.querySelectorAll('.form-row input')[3]?.value || '';
+      isPaidVal = li.querySelector('.checkbox-label input[type="checkbox"]')?.checked ?? true;
+    } else {
+      contributorVal = li.querySelectorAll('.form-row input')[3]?.value || '';
+    }
+
+    const body = {
+      amount,
+      description: descInput.value.trim(),
+      category: isExp ? categoryVal : '',
+      is_expense: isExp,
+      is_paid: isExp ? isPaidVal : true,
+      card_number: isExp ? (cardVal.trim() || null) : null,
+      contributor_name: !isExp ? (contributorVal.trim() || null) : null,
+      created_at: dateInput.value ? new Date(dateInput.value + 'T12:00:00').toISOString() : null,
+    };
+
+    try {
+      await apiFetch(`/accounts/${currentAccountId}/transactions/${tx.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      showToast('Transaction updated');
+      await loadAccounts();
+      await openAccount(currentAccountId);
+    } catch (e) {
+      showToast('Error: ' + e.message, true);
+    }
+  };
+
+  saveBtn.addEventListener('click', save);
+  cancelBtn.addEventListener('click', async () => {
+    await openAccount(currentAccountId);
+  });
 }
 
 // ── Add transaction ────────────────────────────────────────────────────────
@@ -491,7 +663,7 @@ addTxBtn.addEventListener('click', async () => {
     is_paid: isExpenseMode ? txIsPaid.checked : true,
     card_number: isExpenseMode ? (txCardNumber.value.trim() || null) : null,
     contributor_name: !isExpenseMode ? (txContributorSelect.value || null) : null,
-    created_at: txDate.value ? new Date(txDate.value).toISOString() : null,
+    created_at: txDate.value ? new Date(txDate.value + 'T12:00:00').toISOString() : null,
     participants: participants.map(name => ({ name })),
   };
 

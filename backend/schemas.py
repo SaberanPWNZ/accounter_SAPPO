@@ -111,12 +111,42 @@ class MemberCreate(BaseModel):
         return v.strip()
 
 
+class MemberUpdate(BaseModel):
+    name: str
+    card_number: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be empty")
+        return v.strip()
+
+
 class MemberOut(BaseModel):
     id: int
     name: str
     card_number: str | None
 
     model_config = {"from_attributes": True}
+
+
+class TransactionUpdate(BaseModel):
+    amount: float
+    description: str = ""
+    category: str = ""
+    is_expense: bool = True
+    is_paid: bool = True
+    card_number: str | None = None
+    contributor_name: str | None = None
+    created_at: datetime | None = None
+
+    @field_validator("amount")
+    @classmethod
+    def amount_not_zero(cls, v: float) -> float:
+        if v == 0:
+            raise ValueError("amount must not be zero")
+        return v
 
 
 # ---------- Statistics ----------
