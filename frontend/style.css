@@ -211,15 +211,22 @@ main {
 
 .detail-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
   margin-bottom: 1rem;
   padding-bottom: .75rem;
   border-bottom: 1px solid var(--border);
 }
+.detail-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 .detail-header h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
 
-.balance { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.balance { font-size: 2.2rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .balance.positive { color: var(--green); }
 .balance.negative { color: var(--red); }
 
