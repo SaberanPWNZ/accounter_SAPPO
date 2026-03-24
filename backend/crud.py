@@ -6,8 +6,11 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from models import Account, Transaction, Participant
-from schemas import AccountCreate, CategoryStat, DayStat, MonthStat, TransactionCreate
+from models import Account, Transaction, Participant, Member, Category
+from schemas import (
+    AccountCreate, CategoryCreate, CategoryStat, ContributorMonthStat,
+    DayStat, MemberCreate, MonthContributions, MonthStat, TransactionCreate,
+)
 
 
 # ---------- Account ----------
@@ -37,6 +40,74 @@ def delete_account(db: Session, account_id: int) -> bool:
     return True
 
 
+def get_members(db: Session, account_id: int) -> list[Member]:
+    return (
+        db.query(Member)
+        .filter(Member.account_id == account_id)
+        .order_by(Member.name)
+        .all()
+    )
+
+
+def create_member(db: Session, account_id: int, data: MemberCreate) -> Member:
+    member = Member(
+        account_id=account_id,
+        name=data.name,
+        card_number=data.card_number,
+    )
+    db.add(member)
+    db.commit()
+    db.refresh(member)
+    return member
+
+
+def delete_member(db: Session, member_id: int) -> bool:
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        return False
+    db.delete(member)
+    db.commit()
+    return True
+
+
+# ---------- Category ----------
+
+def get_categories(db: Session, account_id: int) -> list[Category]:
+    return (
+        db.query(Category)
+        .filter(Category.account_id == account_id)
+        .order_by(Category.name)
+        .all()
+    )
+
+
+def create_category(db: Session, account_id: int, data: CategoryCreate) -> Category:
+    category = Category(account_id=account_id, name=data.name)
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def update_category(db: Session, category_id: int, data: CategoryCreate) -> Category | None:
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        return None
+    category.name = data.name
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def delete_category(db: Session, category_id: int) -> bool:
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        return False
+    db.delete(category)
+    db.commit()
+    return True
+
+
 # ---------- Transaction ----------
 
 def get_transactions(db: Session, account_id: int) -> list[Transaction]:
@@ -59,6 +130,7 @@ def create_transaction(
         is_expense=data.is_expense,
         is_paid=data.is_paid,
         card_number=data.card_number,
+        contributor_name=data.contributor_name,
     )
     db.add(tx)
     db.flush()
@@ -187,3 +259,46 @@ def get_stats_by_category(
         )
         for label, data in sorted(buckets.items())
     ]
+
+
+def get_contributions_by_month(
+    db: Session, year: int, account_id: int | None = None
+) -> list[MonthContributions]:
+    q = _base_query(db, account_id)
+    rows = q.filter(Transaction.amount > 0).all()
+
+    months: dict[int, dict[str, dict]] = {}
+    for tx in rows:
+        d = tx.created_at.date()
+        if d.year != year:
+            continue
+        m = d.month
+        if m not in months:
+            months[m] = {}
+        name = tx.contributor_name or tx.description
+        if name not in months[m]:
+            months[m][name] = {"amount": 0.0, "count": 0}
+        months[m][name]["amount"] += tx.amount
+        months[m][name]["count"] += 1
+
+    result = []
+    for m in sorted(months):
+        contributors = [
+            ContributorMonthStat(
+                name=name,
+                amount=round(data["amount"], 2),
+                count=data["count"],
+            )
+            for name, data in sorted(months[m].items())
+        ]
+        total = round(sum(c.amount for c in contributors), 2)
+        result.append(
+            MonthContributions(
+                year=year,
+                month=m,
+                month_name=month_abbr[m],
+                total=total,
+                contributors=contributors,
+            )
+        )
+    return result

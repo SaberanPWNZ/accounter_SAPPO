@@ -7,7 +7,9 @@ import models
 from database import Base, engine, get_db
 from schemas import (
     AccountCreate, AccountOut, AccountSummary,
-    CategoryStat, DayStat, MonthStat,
+    CategoryCreate, CategoryOut, CategoryStat,
+    DayStat, MemberCreate, MemberOut,
+    MonthContributions, MonthStat,
     TransactionCreate, TransactionOut,
 )
 
@@ -74,6 +76,83 @@ def delete_account(account_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Account not found")
 
 
+@app.get("/api/accounts/{account_id}/members", response_model=list[MemberOut])
+def list_members(account_id: int, db: Session = Depends(get_db)):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    return crud.get_members(db, account_id)
+
+
+@app.post(
+    "/api/accounts/{account_id}/members",
+    response_model=MemberOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_member(account_id: int, data: MemberCreate, db: Session = Depends(get_db)):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    return crud.create_member(db, account_id, data)
+
+
+@app.delete(
+    "/api/accounts/{account_id}/members/{member_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_member(account_id: int, member_id: int, db: Session = Depends(get_db)):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    if not crud.delete_member(db, member_id):
+        raise HTTPException(status_code=404, detail="Member not found")
+
+
+# ── Categories ───────────────────────────────────────────────────────────────
+
+@app.get("/api/accounts/{account_id}/categories", response_model=list[CategoryOut])
+def list_categories(account_id: int, db: Session = Depends(get_db)):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    return crud.get_categories(db, account_id)
+
+
+@app.post(
+    "/api/accounts/{account_id}/categories",
+    response_model=CategoryOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_category(account_id: int, data: CategoryCreate, db: Session = Depends(get_db)):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    return crud.create_category(db, account_id, data)
+
+
+@app.put(
+    "/api/accounts/{account_id}/categories/{category_id}",
+    response_model=CategoryOut,
+)
+def update_category(
+    account_id: int, category_id: int, data: CategoryCreate, db: Session = Depends(get_db)
+):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    cat = crud.update_category(db, category_id, data)
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return cat
+
+
+@app.delete(
+    "/api/accounts/{account_id}/categories/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_category(
+    account_id: int, category_id: int, db: Session = Depends(get_db)
+):
+    if not crud.get_account(db, account_id):
+        raise HTTPException(status_code=404, detail="Account not found")
+    if not crud.delete_category(db, category_id):
+        raise HTTPException(status_code=404, detail="Category not found")
+
+
 # ── Transactions ─────────────────────────────────────────────────────────────
 
 @app.post(
@@ -129,3 +208,12 @@ def stats_by_category(
     db: Session = Depends(get_db),
 ):
     return crud.get_stats_by_category(db, account_id=account_id)
+
+
+@app.get("/api/stats/contributions", response_model=list[MonthContributions])
+def stats_contributions(
+    year: int = Query(..., ge=2000, le=2100),
+    account_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    return crud.get_contributions_by_month(db, year=year, account_id=account_id)

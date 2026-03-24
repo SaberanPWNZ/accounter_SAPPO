@@ -24,18 +24,17 @@ class ParticipantOut(BaseModel):
 
 class TransactionCreate(BaseModel):
     amount: float
-    description: str
+    description: str = ""
     category: str = ""
     is_expense: bool = True
     is_paid: bool = True
     card_number: str | None = None
+    contributor_name: str | None = None
     participants: list[ParticipantCreate] = []
 
     @field_validator("description")
     @classmethod
-    def description_not_empty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("description must not be empty")
+    def description_strip(cls, v: str) -> str:
         return v.strip()
 
     @field_validator("amount")
@@ -60,6 +59,7 @@ class TransactionOut(BaseModel):
     is_expense: bool
     is_paid: bool
     card_number: str | None
+    contributor_name: str | None
     created_at: datetime
     participants: list[ParticipantOut] = []
 
@@ -98,6 +98,26 @@ class AccountSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MemberCreate(BaseModel):
+    name: str
+    card_number: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be empty")
+        return v.strip()
+
+
+class MemberOut(BaseModel):
+    id: int
+    name: str
+    card_number: str | None
+
+    model_config = {"from_attributes": True}
+
+
 # ---------- Statistics ----------
 
 class DayStat(BaseModel):
@@ -118,7 +138,40 @@ class MonthStat(BaseModel):
     count: int
 
 
+class ContributorMonthStat(BaseModel):
+    name: str
+    amount: float
+    count: int
+
+
+class MonthContributions(BaseModel):
+    year: int
+    month: int
+    month_name: str
+    total: float
+    contributors: list[ContributorMonthStat]
+
+
 class CategoryStat(BaseModel):
     category: str
     total: float
     count: int
+
+
+class CategoryCreate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be empty")
+        return v.strip()
+
+
+class CategoryOut(BaseModel):
+    id: int
+    account_id: int
+    name: str
+
+    model_config = {"from_attributes": True}

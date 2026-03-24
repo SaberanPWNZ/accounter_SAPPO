@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accounter SAPPO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <!-- Chart.js for statistics charts (bundled locally for offline/Docker use) -->
   <script src="chart.min.js"></script>
@@ -17,6 +20,8 @@
       </div>
       <nav class="main-nav">
         <button class="nav-btn active" id="nav-accounts">📋 Accounts</button>
+        <button class="nav-btn" id="nav-members">👥 Members</button>
+        <button class="nav-btn" id="nav-categories">📝 Categories</button>
         <button class="nav-btn" id="nav-stats">📊 Statistics</button>
       </nav>
     </div>
@@ -54,27 +59,122 @@
 
         <div class="tx-form card">
           <h3>Add transaction</h3>
-          <div class="form-row">
-            <input type="number" id="tx-amount" placeholder="Amount (+ deposit / − expense)" step="0.01" />
-            <input type="text" id="tx-description" placeholder="Description" />
-            <input type="text" id="tx-category" placeholder="Category (optional)" list="category-suggestions" />
-            <datalist id="category-suggestions">
-              <option value="food">
-              <option value="transport">
-              <option value="housing">
-              <option value="entertainment">
-              <option value="health">
-              <option value="salary">
-              <option value="freelance">
-              <option value="other">
-            </datalist>
-            <button class="btn btn-primary" id="add-tx-btn">Add</button>
+          <div class="tx-type-toggle">
+            <button class="toggle-btn active" id="toggle-expense" type="button">💸 Expense</button>
+            <button class="toggle-btn" id="toggle-income" type="button">💰 Income</button>
           </div>
-          <p class="form-hint">Use a <strong>positive</strong> number to deposit, <strong>negative</strong> to record an expense.</p>
+          <div class="form-row">
+            <input type="number" id="tx-amount" placeholder="Amount" step="0.01" min="0.01" />
+            <input type="text" id="tx-description" placeholder="Description" />
+          </div>
+          <div class="form-row" id="category-row">
+            <select id="tx-category" class="form-select">
+              <option value="">Category (optional)</option>
+            </select>
+          </div>
+          <div id="expense-extra-fields">
+            <div class="form-row">
+              <input type="text" id="tx-card-number" placeholder="Card number for payout (optional)" />
+            </div>
+            <div class="form-row participants-row">
+              <select id="tx-participant-select"><option value="">Select participant...</option></select>
+              <button class="btn btn-secondary" id="add-participant-btn" type="button">+ Add</button>
+            </div>
+            <div class="participants-tags" id="participants-tags"></div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="tx-is-paid" checked />
+              <span>Paid</span>
+            </label>
+          </div>
+          <div id="income-extra-fields" class="hidden">
+            <div class="form-row">
+              <select id="tx-contributor-select"><option value="">Select contributor...</option></select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="add-tx-btn">Add transaction</button>
         </div>
 
-        <h3 class="tx-heading">Transactions</h3>
-        <ul class="tx-list" id="tx-list"></ul>
+        <div id="contributions-section" class="card">
+          <div class="contributions-header">
+            <h3>📊 Monthly contributions</h3>
+            <div class="contributions-controls">
+              <select id="contrib-year"></select>
+              <select id="contrib-month">
+                <option value="">All months</option>
+                <option value="1">January</option><option value="2">February</option>
+                <option value="3">March</option><option value="4">April</option>
+                <option value="5">May</option><option value="6">June</option>
+                <option value="7">July</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">October</option>
+                <option value="11">November</option><option value="12">December</option>
+              </select>
+              <button class="btn btn-secondary" id="contrib-refresh">↻</button>
+            </div>
+          </div>
+          <div id="contributions-content"></div>
+        </div>
+
+        <div class="tx-columns">
+          <div class="tx-column">
+            <h3 class="tx-heading tx-heading--expense">💸 Expenses</h3>
+            <ul class="tx-list" id="tx-list-expenses"></ul>
+          </div>
+          <div class="tx-column">
+            <h3 class="tx-heading tx-heading--income">💰 Income</h3>
+            <ul class="tx-list" id="tx-list-income"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── MEMBERS PAGE ────────────────────────────────────────────────── -->
+  <main id="page-members" class="members-page hidden">
+    <section class="panel members-panel">
+      <div class="panel-header">
+        <h2>👥 Members</h2>
+        <select id="members-account-select" class="account-select">
+          <option value="">Select account...</option>
+        </select>
+      </div>
+
+      <div id="members-content" class="hidden">
+        <div class="form-row" style="margin-bottom: 1rem">
+          <input type="text" id="member-name" placeholder="Name" />
+          <input type="text" id="member-card" placeholder="Card number (optional)" />
+          <button class="btn btn-primary" id="add-member-btn">+ Add</button>
+        </div>
+        <ul class="members-list" id="members-list"></ul>
+      </div>
+
+      <div id="members-empty" class="empty-state">
+        <span>👆</span>
+        <p>Select an account to manage members</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── CATEGORIES PAGE ──────────────────────────────────────────────── -->
+  <main id="page-categories" class="categories-page hidden">
+    <section class="panel categories-panel">
+      <div class="panel-header">
+        <h2>📝 Expense Categories</h2>
+        <select id="categories-account-select" class="account-select">
+          <option value="">Select account...</option>
+        </select>
+      </div>
+
+      <div id="categories-content" class="hidden">
+        <div class="form-row category-add-row">
+          <input type="text" id="category-name-input" placeholder="New category name" />
+          <button class="btn btn-primary" id="add-category-btn">+ Add</button>
+        </div>
+        <ul class="categories-list" id="categories-list"></ul>
+      </div>
+
+      <div id="categories-empty" class="empty-state">
+        <span>👆</span>
+        <p>Select an account to manage categories</p>
       </div>
     </section>
   </main>
