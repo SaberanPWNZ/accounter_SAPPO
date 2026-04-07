@@ -26,6 +26,7 @@ const txCardNumber         = document.getElementById('tx-card-number');
 const txIsPaid             = document.getElementById('tx-is-paid');
 const txParticipantSelect  = document.getElementById('tx-participant-select');
 const txContributorSelect  = document.getElementById('tx-contributor-select');
+const txSpenderSelect      = document.getElementById('tx-spender-select');
 const participantsTags     = document.getElementById('participants-tags');
 const expenseExtraFields   = document.getElementById('expense-extra-fields');
 const incomeExtraFields    = document.getElementById('income-extra-fields');
@@ -264,10 +265,11 @@ function startEditMember(li, member, accountId) {
 }
 
 function populateMemberSelects() {
-  const selects = [txParticipantSelect, txContributorSelect];
+  const selects = [txParticipantSelect, txContributorSelect, txSpenderSelect];
   for (const sel of selects) {
     const val = sel.value;
-    sel.innerHTML = '<option value="">Select...</option>';
+    const firstOpt = sel.options[0]?.textContent || 'Select...';
+    sel.innerHTML = `<option value="">${firstOpt}</option>`;
     for (const m of accountMembers) {
       const opt = document.createElement('option');
       opt.value = m.name;
@@ -510,6 +512,15 @@ function renderTxColumn(list, transactions, emptyMsg) {
       ? `<span class="tx-participants">👥 ${tx.participants.map(p => escHtml(p.name)).join(', ')}</span>` : '';
     const cardHtml = tx.card_number ? `<span class="tx-card">💳 ${escHtml(tx.card_number)}</span>` : '';
     const contribHtml = tx.contributor_name ? `<span class="tx-contributor">👤 ${escHtml(tx.contributor_name)}</span>` : '';
+    const spenderHtml = tx.spender_name ? `<span class="tx-contributor">🧑 ${escHtml(tx.spender_name)}</span>` : '';
+
+    const spenderSelectHtml = tx.is_expense ? (() => {
+      const opts = accountMembers.map(m =>
+        `<option value="${escHtml(m.name)}" ${m.name === tx.spender_name ? 'selected' : ''}>${escHtml(m.name)}</option>`
+      ).join('');
+      return `<select class="spender-inline-sel" title="Who spent?"><option value="">${tx.spender_name ? '🧑 ' + escHtml(tx.spender_name) : '🧑 Who spent?'}</option>${opts}</select>`;
+    })() : '';
+
     li.innerHTML = `
       <div class="tx-left">
         <span class="tx-desc">${escHtml(tx.description)} ${paidBadge}</span>
@@ -517,11 +528,39 @@ function renderTxColumn(list, transactions, emptyMsg) {
         ${participantsHtml}${cardHtml}${contribHtml}
       </div>
       <div class="tx-right">
+        ${spenderSelectHtml}
         <span class="tx-amount ${amtClass}">${fmtMoney(tx.amount)}</span>
         <button class="btn-icon btn-edit-tx" title="Edit">✏️</button>
         <button class="btn-icon btn-delete-tx" title="Delete" data-txid="${tx.id}">🗑</button>
       </div>
     `;
+
+    if (tx.is_expense) {
+      li.querySelector('.spender-inline-sel').addEventListener('change', async (e) => {
+        const spenderName = e.target.value || null;
+        try {
+          await apiFetch(`/accounts/${currentAccountId}/transactions/${tx.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              amount: tx.amount,
+              description: tx.description,
+              category: tx.category,
+              is_expense: tx.is_expense,
+              is_paid: tx.is_paid,
+              card_number: tx.card_number,
+              contributor_name: tx.contributor_name,
+              spender_name: spenderName,
+              created_at: tx.created_at,
+            }),
+          });
+          tx.spender_name = spenderName;
+          e.target.options[0].textContent = spenderName ? '🧑 ' + spenderName : '🧑 Who spent?';
+        } catch (err) {
+          showToast('Error: ' + err.message, true);
+        }
+      });
+    }
+
     li.querySelector('.btn-edit-tx').addEventListener('click', () => startEditTransaction(li, tx));
     li.querySelector('.btn-delete-tx').addEventListener('click', () => deleteTransaction(tx.id));
     list.appendChild(li);
@@ -540,6 +579,10 @@ async function startEditTransaction(li, tx) {
     `<option value="${escHtml(c.name)}" ${c.name === tx.category ? 'selected' : ''}>${escHtml(c.name)}</option>`
   ).join('');
 
+  const spenderOptions = accountMembers.map(m =>
+    `<option value="${escHtml(m.name)}" ${m.name === tx.spender_name ? 'selected' : ''}>${escHtml(m.name)}</option>`
+  ).join('');
+
   li.className = 'tx-item';
   li.style.flexDirection = 'column';
   li.style.alignItems = 'stretch';
@@ -552,10 +595,16 @@ async function startEditTransaction(li, tx) {
       </div>
       ${isExp ? `
       <div class="form-row">
-        <select>
+        <select class="edit-tx-cat">
           <option value="">Category</option>
           ${catOptions}
         </select>
+        <select class="edit-tx-spender">
+          <option value="">Who spent?</option>
+          ${spenderOptions}
+        </select>
+      </div>
+      <div class="form-row">
         <input type="text" value="${tx.card_number ? escHtml(tx.card_number) : ''}" placeholder="Card number" />
       </div>
       <label class="checkbox-label">
@@ -585,13 +634,17 @@ async function startEditTransaction(li, tx) {
   let cardVal = tx.card_number || '';
   let isPaidVal = tx.is_paid;
   let contributorVal = tx.contributor_name || '';
+  let spenderVal = tx.spender_name || '';
 
   if (isExp) {
-    const catSelect = li.querySelector('.form-row select');
-    const cardInput = inputs[3];
+    const catSelect = li.querySelector('.edit-tx-cat');
+    const spenderSelect = li.querySelector('.edit-tx-spender');
+    const cardInput = li.querySelector('input[placeholder="Card number"]');
     const paidCheckbox = li.querySelector('.checkbox-label input[type="checkbox"]');
     categoryVal = catSelect.value;
+    spenderVal = spenderSelect.value;
     catSelect.addEventListener('change', () => { categoryVal = catSelect.value; });
+    spenderSelect.addEventListener('change', () => { spenderVal = spenderSelect.value; });
     cardInput.addEventListener('input', () => { cardVal = cardInput.value; });
     paidCheckbox.addEventListener('change', () => { isPaidVal = paidCheckbox.checked; });
   } else {
@@ -609,8 +662,9 @@ async function startEditTransaction(li, tx) {
     else amount = Math.abs(amount);
 
     if (isExp) {
-      categoryVal = li.querySelector('.form-row select').value;
-      cardVal = li.querySelectorAll('.form-row input')[3]?.value || '';
+      categoryVal = li.querySelector('.edit-tx-cat').value;
+      spenderVal = li.querySelector('.edit-tx-spender').value;
+      cardVal = li.querySelector('input[placeholder="Card number"]')?.value || '';
       isPaidVal = li.querySelector('.checkbox-label input[type="checkbox"]')?.checked ?? true;
     } else {
       contributorVal = li.querySelectorAll('.form-row input')[3]?.value || '';
@@ -624,6 +678,7 @@ async function startEditTransaction(li, tx) {
       is_paid: isExp ? isPaidVal : true,
       card_number: isExp ? (cardVal.trim() || null) : null,
       contributor_name: !isExp ? (contributorVal.trim() || null) : null,
+      spender_name: isExp ? (spenderVal.trim() || null) : null,
       created_at: dateInput.value ? new Date(dateInput.value + 'T12:00:00').toISOString() : null,
     };
 
@@ -665,6 +720,7 @@ addTxBtn.addEventListener('click', async () => {
     is_paid: isExpenseMode ? txIsPaid.checked : true,
     card_number: isExpenseMode ? (txCardNumber.value.trim() || null) : null,
     contributor_name: !isExpenseMode ? (txContributorSelect.value || null) : null,
+    spender_name: isExpenseMode ? (txSpenderSelect.value || null) : null,
     created_at: txDate.value ? new Date(txDate.value + 'T12:00:00').toISOString() : null,
     participants: participants.map(name => ({ name })),
   };
@@ -681,6 +737,7 @@ addTxBtn.addEventListener('click', async () => {
     txDate.value = '';
     txIsPaid.checked = true;
     txContributorSelect.value = '';
+    txSpenderSelect.value = '';
     participants = [];
     renderParticipantTags();
     showToast(isExpenseMode ? '💸 Expense recorded' : '✅ Deposit added');

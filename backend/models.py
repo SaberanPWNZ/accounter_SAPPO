@@ -55,6 +55,7 @@ class Transaction(Base):
     is_paid: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     card_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
     contributor_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    spender_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

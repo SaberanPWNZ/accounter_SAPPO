@@ -143,6 +143,7 @@ def create_transaction(
         is_paid=data.is_paid,
         card_number=data.card_number,
         contributor_name=data.contributor_name,
+        spender_name=data.spender_name,
     )
     if data.created_at:
         tx.created_at = data.created_at
@@ -180,6 +181,7 @@ def update_transaction(
     tx.is_paid = data.is_paid
     tx.card_number = data.card_number
     tx.contributor_name = data.contributor_name
+    tx.spender_name = data.spender_name
     if data.created_at:
         tx.created_at = data.created_at
     db.commit()

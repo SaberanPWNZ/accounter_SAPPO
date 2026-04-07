@@ -728,6 +728,22 @@ main {
 
 .btn-sm { padding: .3rem .6rem; font-size: .78rem; }
 
+.spender-inline-sel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-sec);
+  font-size: .72rem;
+  padding: .2rem .35rem;
+  outline: none;
+  cursor: pointer;
+  max-width: 120px;
+  transition: border-color var(--transition), color var(--transition);
+}
+.spender-inline-sel:focus,
+.spender-inline-sel:hover { border-color: var(--border-h); color: var(--text); }
+.spender-inline-sel:not([value=""]) { color: var(--text); }
+
 .flatpickr-calendar {
   background: var(--surface) !important;
   border: 1px solid var(--border) !important;

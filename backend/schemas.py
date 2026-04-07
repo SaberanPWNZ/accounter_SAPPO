@@ -30,6 +30,7 @@ class TransactionCreate(BaseModel):
     is_paid: bool = True
     card_number: str | None = None
     contributor_name: str | None = None
+    spender_name: str | None = None
     created_at: datetime | None = None
     participants: list[ParticipantCreate] = []
 
@@ -61,6 +62,7 @@ class TransactionOut(BaseModel):
     is_paid: bool
     card_number: str | None
     contributor_name: str | None
+    spender_name: str | None
     created_at: datetime
     participants: list[ParticipantOut] = []
 
@@ -139,6 +141,7 @@ class TransactionUpdate(BaseModel):
     is_paid: bool = True
     card_number: str | None = None
     contributor_name: str | None = None
+    spender_name: str | None = None
     created_at: datetime | None = None
 
     @field_validator("amount")
