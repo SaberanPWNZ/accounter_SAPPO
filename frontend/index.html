@@ -7,8 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="flatpickr.min.css" />
+  <link rel="stylesheet" href="flatpickr-dark.css" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Chart.js for statistics charts (bundled locally for offline/Docker use) -->
+  <script src="flatpickr.min.js"></script>
   <script src="chart.min.js"></script>
 </head>
 <body>
@@ -66,7 +68,7 @@
           <div class="form-row">
             <input type="number" id="tx-amount" placeholder="Amount" step="0.01" min="0.01" />
             <input type="text" id="tx-description" placeholder="Description" />
-            <input type="date" id="tx-date" />
+            <input type="text" id="tx-date" placeholder="📅 Date" readonly />
           </div>
           <div class="form-row" id="category-row">
             <select id="tx-category" class="form-select">
@@ -126,8 +128,8 @@
                 <option value="paid">Paid</option>
                 <option value="unpaid">Unpaid</option>
               </select>
-              <input type="date" id="filter-expense-from" placeholder="From" />
-              <input type="date" id="filter-expense-to" placeholder="To" />
+              <input type="text" id="filter-expense-from" placeholder="From" readonly />
+              <input type="text" id="filter-expense-to" placeholder="To" readonly />
             </div>
             <ul class="tx-list" id="tx-list-expenses"></ul>
           </div>
@@ -135,8 +137,8 @@
             <h3 class="tx-heading tx-heading--income">💰 Income</h3>
             <div class="tx-filters">
               <input type="text" id="filter-income-search" placeholder="Search..." />
-              <input type="date" id="filter-income-from" placeholder="From" />
-              <input type="date" id="filter-income-to" placeholder="To" />
+              <input type="text" id="filter-income-from" placeholder="From" readonly />
+              <input type="text" id="filter-income-to" placeholder="To" readonly />
             </div>
             <ul class="tx-list" id="tx-list-income"></ul>
           </div>

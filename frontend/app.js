@@ -548,7 +548,7 @@ async function startEditTransaction(li, tx) {
       <div class="form-row">
         <input type="number" value="${Math.abs(tx.amount)}" step="0.01" min="0.01" placeholder="Amount" />
         <input type="text" value="${escHtml(tx.description)}" placeholder="Description" />
-        <input type="date" value="${dateVal}" />
+        <input type="text" class="edit-tx-date" value="${dateVal}" placeholder="📅 Date" readonly />
       </div>
       ${isExp ? `
       <div class="form-row">
@@ -578,6 +578,8 @@ async function startEditTransaction(li, tx) {
   const amountInput = inputs[0];
   const descInput = inputs[1];
   const dateInput = inputs[2];
+
+  flatpickr(li.querySelector('.edit-tx-date'), { ...fpConfig, defaultDate: dateVal || null });
 
   let categoryVal = tx.category || '';
   let cardVal = tx.card_number || '';
@@ -1204,6 +1206,22 @@ document.getElementById('add-category-btn').addEventListener('click', async () =
     showToast('Error: ' + e.message, true);
   }
 });
+
+// ── Flatpickr init ─────────────────────────────────────────────────────────
+const fpConfig = {
+  dateFormat: 'Y-m-d',
+  altInput: true,
+  altFormat: 'M j, Y',
+  theme: 'dark',
+  allowInput: false,
+  disableMobile: true,
+};
+
+flatpickr('#tx-date', { ...fpConfig, placeholder: '📅 Date' });
+flatpickr('#filter-expense-from', fpConfig);
+flatpickr('#filter-expense-to', fpConfig);
+flatpickr('#filter-income-from', fpConfig);
+flatpickr('#filter-income-to', fpConfig);
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 loadAccounts();

@@ -727,3 +727,13 @@ main {
 }
 
 .btn-sm { padding: .3rem .6rem; font-size: .78rem; }
+
+.flatpickr-calendar {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-radius: var(--radius) !important;
+}
+
+.flatpickr-input { cursor: pointer; }
+.flatpickr-input + .form-control { cursor: pointer; }
