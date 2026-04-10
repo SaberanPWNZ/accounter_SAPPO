@@ -247,8 +247,8 @@ function startEditMember(li, member, accountId) {
       showToast('Member updated');
       await loadMembersForPage(accountId);
       if (accountId == currentAccountId) {
-        accountMembers = await apiFetch(`/accounts/${currentAccountId}/members`);
         populateMemberSelects();
+        applyFilters();
       }
     } catch (e) {
       showToast('Error: ' + e.message, true);
@@ -339,8 +339,8 @@ document.getElementById('add-member-btn').addEventListener('click', async () => 
     cardInput.value = '';
     await loadMembersForPage(accountId);
     if (accountId == currentAccountId) {
-      accountMembers = await apiFetch(`/accounts/${currentAccountId}/members`);
       populateMemberSelects();
+      applyFilters();
     }
   } catch (e) {
     showToast('Error: ' + e.message, true);
@@ -354,8 +354,8 @@ async function deleteMember(id) {
     await apiFetch(`/accounts/${accountId}/members/${id}`, { method: 'DELETE' });
     await loadMembersForPage(accountId);
     if (accountId == currentAccountId) {
-      accountMembers = await apiFetch(`/accounts/${currentAccountId}/members`);
       populateMemberSelects();
+      applyFilters();
     }
   } catch (e) {
     showToast('Error: ' + e.message, true);
